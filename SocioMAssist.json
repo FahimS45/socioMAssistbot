@@ -1,0 +1,974 @@
+{
+  "name": "SocioMAssist",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are a professional social media copywriter and scheduling assistant. \nYour job is to generate structured social media content for automation workflows based on user needs.\nYou must understand the user's needs first and then generate the content strictly in accordance to the following instructions.\n\nCRITICAL OUTPUT FORMAT RULE:\nYou MUST return ONLY valid JSON matching the exact schema.\nDo NOT output markdown, explanations, or any extra text outside JSON.\n\nFIELD REQUIREMENTS:\n\n1. title\n- Must be a short engaging headline\n- Maximum 10 words\n- No hashtags\n- No quotes\n- No punctuation at the end unless necessary\n\n2. post\n- Must be strictly under 500 characters (including spaces and punctuation)\n- Target range: 350–480 characters for safety\n- Write in an engaging, conversational tone suitable for Facebook and Instagram\n- No hashtags in the body\n- No emojis unless naturally appropriate (use sparingly)\n- Must be self-contained and readable without the title\n- Count characters carefully before responding\n\nCHARACTER COUNT GUIDANCE:\n- 350 characters ≈ 3–4 sentences\n- 500 characters ≈ 5–6 sentences\n- NEVER exceed 500 characters\n\n3. scheduled_at\n- Must be a datetime string in EXACT format:\n  YYYY-MM-DD HH:mm\n- Convert natural language input (e.g., \"24th June 8PM\") into this format\n- Assume correct year is the upcoming valid occurrence if not specified\n\nSTRICT RULES:\n- Output ONLY valid JSON\n- No additional keys beyond: title, post, scheduled_at\n- No commentary or explanations\n- No markdown formatting\n- No trailing commas\n- Ensure JSON is always syntactically valid\n- Ensure character count constraint is satisfied before responding {{ $json.text }}"
+            },
+            {
+              "content": "={{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "name": "desired_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"Social media post title, maximum 10 words\"\n    },\n    \"post\": {\n      \"type\": \"string\",\n      \"description\": \"Social media post content, strictly under 500 characters\"\n    },\n    \"scheduled_at\": {\n      \"type\": \"string\",\n      \"description\": \"Scheduled posting datetime in format YYYY-MM-DD HH:mm\"\n    }\n  },\n  \"required\": [\n    \"title\",\n    \"post\",\n    \"scheduled_at\"\n  ],\n  \"additionalProperties\": false\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        16
+      ],
+      "id": "74b9b306-887d-4961-9b4a-8f1ff841ed34",
+      "name": "generatePost",
+      "credentials": {
+        "openAiApi": {
+          "id": "9RliieAvuSldzYsy",
+          "name": "OpenAI account 118"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        32
+      ],
+      "id": "b2c48035-5fe4-44ca-9f9a-a97e6918c9b7",
+      "name": "telegramTrigger",
+      "webhookId": "25979fc8-e317-41b3-ba74-9d0c08665a0a",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('validateCharCount').item.json;\nconst chat_id   = $('telegramTrigger').item.json.message.chat.id;\n\nreturn [{\n  json: {\n    chat_id,\n    title:        validated.title,\n    post:         validated.post,\n    scheduled_at: validated.scheduled_at,\n    char_count:   validated.char_count\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "85471851-2135-4083-a8f1-ddcd9bc174e5",
+      "name": "storeSession"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hcti.io/v1/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "html",
+              "value": "={{ $json.html }}"
+            },
+            {
+              "name": "viewport_width",
+              "value": "1080"
+            },
+            {
+              "name": "viewport_height",
+              "value": "1080"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1632,
+        0
+      ],
+      "id": "b5cd5961-d7c0-4f0f-9186-aeff3f4d4b23",
+      "name": "generateImage",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "zu7hr96f3Z4PSpe9",
+          "name": "hcti"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1840,
+        0
+      ],
+      "id": "811338ea-9d3d-4ac9-abc3-49ccb46651e6",
+      "name": "downloadImage"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('telegramTrigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {
+          "remove_keyboard": true
+        },
+        "additionalFields": {
+          "caption": "=🎨 *Your Post Is Ready for Review*  \n\n━━━━━━━━━━━━━━━━━━━━━  \n\n📌 *Title:* {{ $('storeSession').item.json.title }}\n\n📝 *Post:*  {{ $('storeSession').item.json.post }}\n\n🗓 *Scheduled For:* {{ $('storeSession').item.json.scheduled_at }}\n\n━━━━━━━━━━━━━━━━━━━━━  \n\n_Please review the image card and post copy above._",
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        0
+      ],
+      "id": "10e91de1-24c7-4e41-8a4f-6e0e75679a49",
+      "name": "sendForReview",
+      "webhookId": "ce100cfc-44a4-4519-8741-dd77f6d8788c",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('telegramTrigger').item.json.message.chat.id }}",
+        "message": "=_Choose your action_",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2368,
+        0
+      ],
+      "id": "bf2fe50e-9064-45ff-8aea-ecfc963c667b",
+      "name": "waitForUserAction",
+      "webhookId": "62657e77-e0de-49e8-aa46-33971401a78c",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "815ff379-7746-4cfd-b028-9e7b7a4c21ce",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2544,
+        0
+      ],
+      "id": "6591857f-a7bc-4325-bb54-f75612e5d811",
+      "name": "isApproved?"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('telegramTrigger').item.json.message.chat.id }}",
+        "message": "=_What do you want to modify? Please write your responses on this form!_",
+        "responseType": "freeText",
+        "options": {
+          "responseFormTitle": "Content Modification Form",
+          "responseFormDescription": "Please write the modifcation you would like to make.",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        256
+      ],
+      "id": "f1d24dd5-bce6-4bf2-bdf3-8ee6eaaa966b",
+      "name": "declineResponseForm",
+      "webhookId": "7214c69f-2735-4bb7-8362-da4ac23028ba",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const session  = $('storeSession').item.json;\nconst feedback = $json.data?.text || $json.data || '';\n\nconst text = `REVISION REQUEST — Do NOT treat this as a new post request.\n\nPREVIOUS CONTENT (user wants this revised):\nTitle: \"${session.title}\"\nPost: \"${session.post}\"\nScheduled at: ${session.scheduled_at}\n\nUSER FEEDBACK:\n\"${feedback}\"\n\nINSTRUCTIONS:\n- Revise the title and/or post based on the user's feedback above\n- If the user provides a new schedule time, update scheduled_at accordingly (format: YYYY-MM-DD HH:mm)\n- If no new time is mentioned, keep the same scheduled_at: ${session.scheduled_at}\n- Keep the same topic/theme unless the user explicitly asks to change it\n- The post must be strictly under 500 characters\n- Return the FULL revised JSON with title, post, and scheduled_at`;\n\nreturn [{ json: { text } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        256
+      ],
+      "id": "554de679-8ab5-4a37-87c5-4035b417eaed",
+      "name": "reviewPayLoad"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('telegramTrigger').item.json.message.chat.id }}",
+        "text": "=✅ *Post Approved!*  \n\n━━━━━━━━━━━━━━━━━━━━━ \n\n📌 *Title:* {{ $('storeSession').item.json.title }} \n🗓 *Scheduled For:* {{ $('storeSession').item.json.scheduled_at }}  \n\nYour post is queued and will be published to Facebook and Instagram at the scheduled time.  \n\n⏳ _Waiting to publish..._",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2752,
+        -16
+      ],
+      "id": "28d0a651-4ef8-4ab2-87af-1081fc013fb4",
+      "name": "sendApprovalConfirmation",
+      "webhookId": "93e497da-02c2-4917-8382-02212b88c093",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ $('storeSession').item.json.scheduled_at }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3072,
+        -16
+      ],
+      "id": "73372e03-f976-4cd0-a66c-c53e845cb284",
+      "name": "waitUntilScheduled",
+      "webhookId": "a47be93c-3ff2-4d61-b00e-175980d51b38"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibeacademy.cloud/webhook/mock-facebook-publish",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('storeSession').item.json.title }}"
+            },
+            {
+              "name": "post",
+              "value": "={{ $('storeSession').item.json.post }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3296,
+        -16
+      ],
+      "id": "d65dbd0a-4083-46b9-8095-d33c19f67677",
+      "name": "publishToFb"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vibeacademy.cloud/webhook/mock-instagram-publish",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('storeSession').item.json.title }}"
+            },
+            {
+              "name": "post",
+              "value": "={{ $('storeSession').item.json.post }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3296,
+        160
+      ],
+      "id": "ab39bcc7-b24b-446a-b200-68f23cecfb54",
+      "name": "publishToInsta"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\"/>\n  <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap\" rel=\"stylesheet\"/>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    \n    html, body {\n      width: 1080px;\n      height: 1080px;\n      overflow: hidden;\n      font-family: 'Inter', sans-serif;\n      background: #0a0a0a;\n    }\n\n    .card-wrapper {\n      position: absolute;\n      inset: 0;\n      width: 1080px;\n      height: 1080px;\n      overflow: hidden;\n    }\n\n    .bg-gradient {\n      position: absolute;\n      inset: 0;\n      background:\n        radial-gradient(ellipse 80% 60% at 70% 0%, rgba(160, 71, 58, 0.45) 0%, transparent 60%),\n        radial-gradient(ellipse 60% 80% at 100% 100%, rgba(120, 40, 30, 0.3) 0%, transparent 55%),\n        radial-gradient(ellipse 100% 50% at 0% 50%, rgba(40, 20, 15, 0.6) 0%, transparent 70%),\n        linear-gradient(160deg, #1a0e0b 0%, #0a0a0a 40%, #0f0808 100%);\n      z-index: 1;\n    }\n\n    .geo-ring {\n      position: absolute;\n      width: 840px;\n      height: 840px;\n      border-radius: 50%;\n      border: 1px solid rgba(160, 71, 58, 0.12);\n      top: -280px;\n      right: -200px;\n      z-index: 2;\n    }\n\n    .geo-ring-2 {\n      position: absolute;\n      width: 560px;\n      height: 560px;\n      border-radius: 50%;\n      border: 1px solid rgba(160, 71, 58, 0.07);\n      top: -160px;\n      right: -80px;\n      z-index: 2;\n    }\n\n    .slash {\n      position: absolute;\n      top: 0;\n      right: 180px;\n      width: 1px;\n      height: 1080px;\n      background: linear-gradient(\n        to bottom,\n        transparent 0%,\n        rgba(160, 71, 58, 0.35) 25%,\n        rgba(160, 71, 58, 0.15) 60%,\n        transparent 100%\n      );\n      transform: rotate(15deg);\n      transform-origin: top center;\n      z-index: 3;\n    }\n\n    .bottom-glow {\n      position: absolute;\n      bottom: 0;\n      left: 0;\n      right: 0;\n      height: 480px;\n      background: linear-gradient(\n        to top,\n        rgba(160, 71, 58, 0.18) 0%,\n        rgba(160, 71, 58, 0.06) 50%,\n        transparent 100%\n      );\n      z-index: 4;\n    }\n\n    .bottom-rule {\n      position: absolute;\n      bottom: 0;\n      left: 0;\n      right: 0;\n      height: 6px;\n      background: linear-gradient(\n        90deg,\n        #A0473A 0%,\n        #C4584A 40%,\n        #A0473A 70%,\n        transparent 100%\n      );\n      z-index: 10;\n    }\n\n    .logo-wrap {\n      position: absolute;\n      top: 56px;\n      right: 56px;\n      z-index: 20;\n      width: 160px;\n      height: 160px;\n    }\n\n    .logo-img {\n      width: 100%;\n      height: 100%;\n      object-fit: contain;\n      filter: invert(1) brightness(1.1);\n    }\n\n    .title-block {\n      position: absolute;\n      bottom: 104px;\n      left: 88px;\n      right: 88px;\n      z-index: 20;\n    }\n\n    .title-accent {\n      width: 56px;\n      height: 6px;\n      background: #A0473A;\n      margin-bottom: 32px;\n      border-radius: 2px;\n    }\n\n    .card-title {\n      font-size: 84px;\n      font-weight: 900;\n      line-height: 1.05;\n      letter-spacing: -0.03em;\n      word-break: break-word;\n      background: linear-gradient(135deg, #ffffff 0%, #f0e8e6 60%, #d4a09a 100%);\n      -webkit-background-clip: text;\n      -webkit-text-fill-color: transparent;\n      background-clip: text;\n    }\n  </style>\n</head>\n<body>\n\n  <div class=\"card-wrapper\">\n    <div class=\"bg-gradient\"></div>\n    <div class=\"geo-ring\"></div>\n    <div class=\"geo-ring-2\"></div>\n    <div class=\"slash\"></div>\n    <div class=\"bottom-glow\"></div>\n    <div class=\"bottom-rule\"></div>\n\n    <div class=\"logo-wrap\">\n      <img class=\"logo-img\"\n           src=\"https://raw.githubusercontent.com/FahimS45/socioMAssistbot/main/assets/dope-01.png\"\n           alt=\"Brand logo\"/>\n    </div>\n\n    <div class=\"title-block\">\n      <div class=\"title-accent\"></div>\n      <h1 class=\"card-title\" id=\"card-title\">{{$json.title}}</h1>\n    </div>\n  </div>\n\n  <script>\n    const el = document.getElementById('card-title');\n    const len = el.textContent.trim().length;\n    if (len > 50)      el.style.fontSize = '56px';\n    else if (len > 36) el.style.fontSize = '68px';\n    else if (len > 24) el.style.fontSize = '76px';\n  </script>\n\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1424,
+        0
+      ],
+      "id": "1d91e26e-af62-4391-998f-617ca17600e9",
+      "name": "htmlImageCard"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('storeSession').item.json.chat_id }}",
+        "text": "=🚀 *Post Published Successfully!*   \n\n━━━━━━━━━━━━━━━━━━━━━    \n\n📌 *Title:* {{ $('storeSession').item.json.title }}   \n✅ Published to *Instagram* {{ $('publishToInsta').item.json.post_id }} \n\n━━━━━━━━━━━━━━━━━━━━━  \n\n_Your content is now live on Instagram!_ 🎉",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        160
+      ],
+      "id": "c1162c76-f23c-4700-93f2-d72177b7e2ae",
+      "name": "Send a text message",
+      "webhookId": "0cd1a920-5b55-44d9-916c-8560e8a7d638",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an intent classifier for a social media post automation bot.\n\nThe bot ONLY handles:\n- Generating social media posts on a given topic\n- Scheduling posts to Facebook and Instagram\n\nAnalyze the user's message and determine if it contains a valid request related to social media post generation or scheduling.\n\nIMPORTANT: If the message contains BOTH casual conversation AND a post request, mark it as relevant. Only mark irrelevant if there is NO post generation or scheduling intent at all.\n\nVALID examples:\n- \"Write me a post about AI trends, schedule it for tomorrow 8PM\"\n- \"Hey! Can you create a social media post on climate change for next Monday?\"\n- \"Post about our new product launch, 25th June 10AM\"\n- \"I want a post regarding recent advancements in AI...\"\n- \"Hey whats up? btw can you write a post about fitness tips for Friday?\"\n\nINVALID examples:\n- \"Hey whats up?\"\n- \"Tell me a joke\"\n- \"What's the weather like?\"\n- \"Who won the world cup?\"\n- \"Can you help me write an email?\""
+            },
+            {
+              "content": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "name": "classification_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"relevant\": {\n      \"type\": \"boolean\",\n      \"description\": \"Whether the user message is a valid social media post generation or scheduling request\"\n    }\n  },\n  \"additionalProperties\": false,\n  \"required\": [\"relevant\"]\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -512,
+        32
+      ],
+      "id": "20240655-654b-4106-9597-a8b2fe8bfd76",
+      "name": "intentGuard",
+      "credentials": {
+        "openAiApi": {
+          "id": "9RliieAvuSldzYsy",
+          "name": "OpenAI account 118"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text    = $json.text || $('telegramTrigger').item.json.message.text;\nconst chat_id = $json.chat_id || $('telegramTrigger').item.json.message.chat.id;\n\nreturn [{\n  json: {\n    text,\n    chat_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        16
+      ],
+      "id": "467adad0-5a1a-495a-a79a-57c940d26b7f",
+      "name": "parseInput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9f8dbc2d-6633-4056-b95e-5108a523dc95",
+              "leftValue": "={{ $json.output[0].content[0].text.relevant }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        32
+      ],
+      "id": "f59950fb-d030-4860-801f-6aefcd9e94ad",
+      "name": "isRelevant"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('telegramTrigger').item.json.message.chat.id }}",
+        "text": "=Sorry, I can only help with social media posts! \n\nI can generate and schedule engaging posts for Facebook and Instagram. \n\n _Just tell me the topic and when you'd like it posted, for example:_  \"Write a post about AI trends and schedule it for tomorrow at 8PM\"",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        272
+      ],
+      "id": "f1bc93a1-b6b2-4e6e-a38e-a8a98393fb9b",
+      "name": "sendRejectMessage",
+      "webhookId": "dc060bf5-7d7a-437d-ba26-43a5ce645452",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text;\n\nif (!raw || typeof raw !== 'object') {\n  return [{\n    json: {\n      valid: false,\n      char_count: 0,\n      text: \"The previous output could not be parsed. Please regenerate the post. Return ONLY valid JSON with title, post, and scheduled_at. The post must be under 500 characters.\"\n    }\n  }];\n}\n\nconst copy         = raw.post || '';\nconst title        = raw.title || '';\nconst scheduled_at = raw.scheduled_at || '';\n\nif (!copy) {\n  return [{\n    json: {\n      valid: false,\n      char_count: 0,\n      text: \"The previous output had no post field. Please regenerate. Return ONLY valid JSON with title, post, and scheduled_at. The post must be under 500 characters.\"\n    }\n  }];\n}\n\n// ─── Character count validation ──────────────────────────────────────────────\nconst charCount = copy.length;\nconst MAX = 600;\n\nif (charCount <= MAX) {\n  return [{\n    json: {\n      valid: true,\n      char_count: charCount,\n      title,\n      post: copy,\n      scheduled_at\n    }\n  }];\n}\n\n// FALSE path — format as { text } so generatePost can read {{ $json.text }}\nconst text = `CHARACTER COUNT FIX — Do NOT treat this as a new post request.\n\nPREVIOUS CONTENT (too long at ${charCount} characters, max is 500):\nTitle: \"${title}\"\nPost: \"${copy}\"\nScheduled at: ${scheduled_at}\n\nINSTRUCTIONS:\n- Shorten the post to under 500 characters while preserving the key message\n- Keep the same title unless it also needs shortening\n- Keep the same scheduled_at: ${scheduled_at}\n- Return the FULL revised JSON with title, post, and scheduled_at`;\n\nreturn [{\n  json: {\n    valid: false,\n    char_count: charCount,\n    text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        16
+      ],
+      "id": "c1007cad-5a31-478c-ae85-aa9acfc52fe0",
+      "name": "validateCharCount"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83d59405-2351-4303-80de-67fce81c8a2b",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        16
+      ],
+      "id": "7330600f-e05e-42e2-9fb0-f366304fc1ad",
+      "name": "charCountOk?"
+    },
+    {
+      "parameters": {
+        "content": "## Guardrail — Intent Classifier\n\nGPT-4.1-nano checks if the user input is a valid post generation/scheduling request. Returns `relevant: true/false`.\n\n**Passes:** Post requests, even if mixed with casual chat.\n**Blocks:** Greetings, random questions, off-topic messages.\n\nPrevents unnecessary LLM calls downstream.\n",
+        "height": 672,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -192
+      ],
+      "id": "832c34f4-c71d-460b-af84-9910e08077e1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Post Generation & Character Count Validation Loop\n\nLLM generates the post → Code node checks if post is under 500 characters (Telegram caption limit).\n\n**Pass:** Routes to image generation pipeline.\n**Fail:** Feeds back to LLM with the previous output and instruction to shorten, then re-validates. Loops until within limit.",
+        "height": 672,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        272,
+        -160
+      ],
+      "id": "a24ff707-d7fc-4cc0-8c5c-0716a77715dc",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Brand-Consistent Image Compositing\n\nHTML/CSS template with fixed logo (top-right) and dynamic title (lower-middle) → sent to htmlcsstoimage.com API (hcti.io) → returns rendered 1080×1080 PNG → downloaded as binary for Telegram.\n\nLogo position and layout are locked in CSS. Only the title text changes per run, ensuring pixel-perfect structural consistency across all posts.",
+        "height": 592,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        -224
+      ],
+      "id": "46e615e2-ca43-456d-82b0-ef66ba918537",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Human-in-the-Loop (HITL) — Approval Gate\n\nGenerated image card + post sent to user via Telegram for review. Workflow pauses using n8n's built-in \"Send and Wait\" mechanism until user responds.\n\n**Approve →** Post is confirmed and queued for scheduled publishing.\n**Decline →** Opens a feedback form where user describes desired changes. Feedback is combined with the previous output and sent back to the LLM for full regeneration. Loop continues until approved.\n\nAll review interactions happen within a single n8n execution — no external state management required.",
+        "height": 752,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2096,
+        -256
+      ],
+      "id": "b339a9c6-ed71-44ca-a0b4-670be08777c6",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Scheduled Publishing — Mock Endpoints\n\nAfter approval, the Wait node pauses execution until the user's scheduled datetime. At the scheduled time, posts are published in parallel to mock Facebook and Instagram endpoints (separate n8n webhook workflows). User receives confirmation on Telegram for each platform.\n\nMock endpoints simulate real API responses with post IDs, proving the publishing handoff works end-to-end.",
+        "height": 592,
+        "width": 704
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3024,
+        -208
+      ],
+      "id": "15b5a4bb-8a15-4f62-bafa-95d87d0478ef",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('storeSession').item.json.chat_id }}",
+        "text": "=🚀 *Post Published Successfully!*  \n\n━━━━━━━━━━━━━━━━━━━━━  \n\n📌 *Title:* {{ $('storeSession').item.json.title }}  \n✅ Published to *Facebook* {{ $('publishToFb').item.json.post_id }}\n\n━━━━━━━━━━━━━━━━━━━━━\n\n_Your content is now live on Facebook!_ 🎉",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        -16
+      ],
+      "id": "0c1767ac-078d-443b-9530-ae214b2ab883",
+      "name": "sendConfirmationForFb",
+      "webhookId": "8d973ba3-2ca2-45f3-8277-845cc8d7a312",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ntj0H1YwW9LxU0Zh",
+          "name": "SocioMAssistBot"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "telegramTrigger": [
+      {
+        "json": {
+          "update_id": 89072511,
+          "message": {
+            "message_id": 54,
+            "from": {
+              "id": 6549097527,
+              "is_bot": false,
+              "first_name": "Fahim",
+              "last_name": "S",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 6549097527,
+              "first_name": "Fahim",
+              "last_name": "S",
+              "type": "private"
+            },
+            "date": 1782209904,
+            "text": "Write me a post regarding data science application in Civil engineering inductry. Schedule the post at 4:20pm 23rd June 2026"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "generatePost": {
+      "main": [
+        [
+          {
+            "node": "validateCharCount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "telegramTrigger": {
+      "main": [
+        [
+          {
+            "node": "intentGuard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "storeSession": {
+      "main": [
+        [
+          {
+            "node": "htmlImageCard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generateImage": {
+      "main": [
+        [
+          {
+            "node": "downloadImage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "downloadImage": {
+      "main": [
+        [
+          {
+            "node": "sendForReview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendForReview": {
+      "main": [
+        [
+          {
+            "node": "waitForUserAction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "waitForUserAction": {
+      "main": [
+        [
+          {
+            "node": "isApproved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "isApproved?": {
+      "main": [
+        [
+          {
+            "node": "sendApprovalConfirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "declineResponseForm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "declineResponseForm": {
+      "main": [
+        [
+          {
+            "node": "reviewPayLoad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reviewPayLoad": {
+      "main": [
+        [
+          {
+            "node": "generatePost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendApprovalConfirmation": {
+      "main": [
+        [
+          {
+            "node": "waitUntilScheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "waitUntilScheduled": {
+      "main": [
+        [
+          {
+            "node": "publishToFb",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "publishToInsta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "htmlImageCard": {
+      "main": [
+        [
+          {
+            "node": "generateImage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "publishToFb": {
+      "main": [
+        [
+          {
+            "node": "sendConfirmationForFb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "publishToInsta": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "intentGuard": {
+      "main": [
+        [
+          {
+            "node": "isRelevant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parseInput": {
+      "main": [
+        [
+          {
+            "node": "generatePost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "isRelevant": {
+      "main": [
+        [
+          {
+            "node": "parseInput",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "sendRejectMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendRejectMessage": {
+      "main": [
+        []
+      ]
+    },
+    "validateCharCount": {
+      "main": [
+        [
+          {
+            "node": "charCountOk?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "charCountOk?": {
+      "main": [
+        [
+          {
+            "node": "storeSession",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "generatePost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "312c8edc-fbcc-4618-bd65-7e22cc0a02e5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "20cf75cd0417fe5be3c3d8dcf7163bcd4dd5f0947193527bf3d55f850ac76577"
+  },
+  "id": "2G4cCS0LUPUZGQ7c",
+  "tags": []
+}

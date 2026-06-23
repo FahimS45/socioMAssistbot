@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    html, body {
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+    }
+
+    .card-wrapper {
+      position: absolute;
+      inset: 0;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 0%, rgba(160, 71, 58, 0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 100% 100%, rgba(120, 40, 30, 0.3) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 50% at 0% 50%, rgba(40, 20, 15, 0.6) 0%, transparent 70%),
+        linear-gradient(160deg, #1a0e0b 0%, #0a0a0a 40%, #0f0808 100%);
+      z-index: 1;
+    }
+
+    .geo-ring {
+      position: absolute;
+      width: 840px;
+      height: 840px;
+      border-radius: 50%;
+      border: 1px solid rgba(160, 71, 58, 0.12);
+      top: -280px;
+      right: -200px;
+      z-index: 2;
+    }
+
+    .geo-ring-2 {
+      position: absolute;
+      width: 560px;
+      height: 560px;
+      border-radius: 50%;
+      border: 1px solid rgba(160, 71, 58, 0.07);
+      top: -160px;
+      right: -80px;
+      z-index: 2;
+    }
+
+    .slash {
+      position: absolute;
+      top: 0;
+      right: 180px;
+      width: 1px;
+      height: 1080px;
+      background: linear-gradient(to bottom, transparent 0%, rgba(160, 71, 58, 0.35) 25%, rgba(160, 71, 58, 0.15) 60%, transparent 100%);
+      transform: rotate(15deg);
+      transform-origin: top center;
+      z-index: 3;
+    }
+
+    .bottom-glow {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 480px;
+      background: linear-gradient(to top, rgba(160, 71, 58, 0.18) 0%, rgba(160, 71, 58, 0.06) 50%, transparent 100%);
+      z-index: 4;
+    }
+
+    .bottom-rule {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #A0473A 0%, #C4584A 40%, #A0473A 70%, transparent 100%);
+      z-index: 10;
+    }
+
+    /* LOGO: top-right, FIXED. Coordinates never change. */
+    .logo-wrap {
+      position: absolute;
+      top: 56px;
+      right: 56px;
+      z-index: 20;
+      width: 160px;
+      height: 160px;
+    }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: invert(1) brightness(1.1);
+    }
+
+    /* TITLE: lower-middle, FIXED. Only text content changes. */
+    .title-block {
+      position: absolute;
+      bottom: 104px;
+      left: 88px;
+      right: 88px;
+      z-index: 20;
+    }
+
+    .title-accent {
+      width: 56px;
+      height: 6px;
+      background: #A0473A;
+      margin-bottom: 32px;
+      border-radius: 2px;
+    }
+
+    .card-title {
+      font-size: 84px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      word-break: break-word;
+      background: linear-gradient(135deg, #ffffff 0%, #f0e8e6 60%, #d4a09a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card-wrapper">
+    <div class="bg-gradient"></div>
+    <div class="geo-ring"></div>
+    <div class="geo-ring-2"></div>
+    <div class="slash"></div>
+    <div class="bottom-glow"></div>
+    <div class="bottom-rule"></div>
+
+    <!-- LOGO: top-right, always fixed at (56px, 56px) -->
+    <div class="logo-wrap">
+      <img class="logo-img"
+           src="https://raw.githubusercontent.com/FahimS45/socioMAssistbot/main/assets/dope-01.png"
+           alt="Brand logo"/>
+    </div>
+
+    <!-- TITLE: lower-middle, only this text changes -->
+    <div class="title-block">
+      <div class="title-accent"></div>
+      <h1 class="card-title" id="card-title">{{CARD_TITLE}}</h1>
+    </div>
+  </div>
+
+  <script>
+    // Auto-scale font size based on title length
+    const el = document.getElementById('card-title');
+    const len = el.textContent.trim().length;
+    if (len > 50)      el.style.fontSize = '56px';
+    else if (len > 36) el.style.fontSize = '68px';
+    else if (len > 24) el.style.fontSize = '76px';
+    // else stays at 84px default
+  </script>
+
+</body>
+</html>
