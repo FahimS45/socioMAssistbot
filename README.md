@@ -6,7 +6,7 @@ The system accepts post topics via Telegram, generates brand-aligned content and
 
 ## Demo Video
 
-[Loom / YouTube link here]
+[![Demo Video](assets/workflow.png)](https://drive.google.com/file/d/1D3FTMrvZSdzc0-1bQIUB_Vl8BawUYKuG/view?usp=sharing)
 
 ## Architecture Overview
 
